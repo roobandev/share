@@ -1,0 +1,31 @@
+upstream backend {
+    server localhost:8000;
+}
+
+upstream test_backend {
+    server localhost:8001;
+}
+
+server {
+    server_name test.domain.net;
+    listen 8080;
+
+    location / {
+        mirror /mirror;
+        proxy_pass http://backend;
+    }
+
+    location = /mirror {
+        internal;
+        set $delimiter "?";
+        if ($is_args) {
+            set $delimiter "&";
+        }
+        log_subrequest on;
+        set $args "$args${delimiter}useTest=true";
+        proxy_pass http://test_backend$request_uri$args;
+    }
+
+}
+
+#Use | python3 -u -m http.server 8000 2> log.txt | for logging
